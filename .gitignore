@@ -1,0 +1,3 @@
+aibootcamp/server/.env
+aibootcamp/client/.env
+aibootcamp/**/__pycache__/
