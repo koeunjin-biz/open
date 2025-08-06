@@ -14,7 +14,7 @@ def reset_session_state():
     st.session_state.docs = {}
 
 
-def set_debate_to_state(topic, messages, adviceitem_id, docs):
+def set_advice_to_state(topic, messages, adviceitem_id, docs):
     st.session_state.app_mode = True
     st.session_state.messages = messages
     st.session_state.viewing_history = True

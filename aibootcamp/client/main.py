@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import requests
 import streamlit as st
-from components.history import save_debate
+from components.history import save_adviceitem
 from components.sidebar import render_sidebar
 from utils.state_manager import init_session_state, reset_session_state
 
@@ -13,7 +13,7 @@ class AgentType:
     
 
 def process_event_data(event_data):
-
+    print(f"[START]main.process_event_data({event_data.get("type")})")
     # 이벤트 종료
     if event_data.get("type") == "end":
         return True
@@ -27,71 +27,69 @@ def process_event_data(event_data):
         response = data["response"]
         topic = data["topic"]
         messages = data["messages"]
-        current_round = data["current_round"]
-        max_rounds = data["max_rounds"]
         docs = data.get("docs", {})
-
-        if role == AgentType.PRO:
-            st.subheader(f"{current_round}/{max_rounds} 라운드")
 
         message = response
 
-        if role == AgentType.PRO:
-            avatar = "🙆🏻‍♀️"
-        elif role == AgentType.CON:
-            avatar = "🙅🏻‍♂"
-        elif role == AgentType.JUDGE:
-            avatar = "👩🏻‍⚖️"
+        avatar = "👩🏻‍⚖️"
 
         with st.chat_message(role, avatar=avatar):
             st.markdown(message)
 
-        if role == AgentType.JUDGE:
-            st.session_state.app_mode = "results"
-            st.session_state.viewing_history = False
-            st.session_state.messages = messages
-            st.session_state.docs = docs
+        
+        st.session_state.app_mode = "results"
+        st.session_state.viewing_history = False
+        st.session_state.messages = messages
+        st.session_state.docs = docs
 
-            # 완료된 토론 정보 저장
-            save_debate(
-                topic,
-                max_rounds,
-                messages,
-                docs,
-            )
+        # 완료된 토론 정보 저장
+        save_adviceitem(
+            topic,
+            messages,
+            docs,
+        )
 
-            # 참고 자료 표시
-            if st.session_state.docs:
-                render_source_materials()
+        # 참고 자료 표시
+        if st.session_state.docs:
+            render_source_materials()
 
-            if st.button("새 토론 시작"):
-                reset_session_state()
-                st.session_state.app_mode = "input"
-                st.rerun()
+        if st.button("새 토론 시작"):
+            reset_session_state()
+            st.session_state.app_mode = "input"
+            st.rerun()
 
     return False
 
 
 def process_streaming_response(response):
+    print(f"[START]main.process_streaming_response({response})")
+    
     for chunk in response.iter_lines():
+        print(f"[START]main.process_streaming_response.chunk=[{chunk}]")
+
         if not chunk:
             continue
 
         # 'data: ' 접두사 제거
         line = chunk.decode("utf-8")
+        print(f"[START]main.process_streaming_response.line=[{line}]")
 
         # line의 형태는 'data: {"type": "update", "data": {}}'
         if not line.startswith("data: "):
             continue
 
         data_str = line[6:]  # 'data: ' 부분 제거
+        print(f"[START]main.process_streaming_response.data_str=[{data_str}]")
+
 
         try:
             # JSON 데이터 파싱
             event_data = json.loads(data_str)
+            print(f"[START]main.process_streaming_response.event_data=[{event_data}]")
 
             # 이벤트 데이터 처리
             is_complete = process_event_data(event_data)
+            print(f"[START]main.process_streaming_response.is_complete=[{is_complete}]")
 
             if is_complete:
                 break
@@ -99,29 +97,31 @@ def process_streaming_response(response):
         except json.JSONDecodeError as e:
             st.error(f"JSON 파싱 오류: {e}")
 
+    print(f"[END]process_streaming_response({response})")
+
 
 def start_advice():
+    print(f"[START]main.start_advice()")
 
     topic = st.session_state.ui_topic
-    max_rounds = st.session_state.max_rounds
-
     enabled_rag = st.session_state.get("ui_enable_rag", False)
 
-    with st.spinner("토론이 진행 중입니다... 완료까지 잠시 기다려주세요."):
+    with st.spinner("상담이 진행 중입니다... 완료까지 잠시 기다려주세요."):
         # API 요청 데이터
         data = {
             "topic": topic,
-            "max_rounds": max_rounds,
             "enable_rag": enabled_rag,
         }
 
         # 포트 충돌 방지를 위해 환경변수 사용
         API_BASE_URL = os.getenv("API_BASE_URL")
         
+        print(f"[START]main.start_advice.data=[{data}]")
+
         try:
             # 스트리밍 API 호출
             response = requests.post(
-                f"{API_BASE_URL}/workflow/debate/stream",
+                f"{API_BASE_URL}/workflow/advice/stream",
                 json=data,
                 stream=True,
                 headers={"Content-Type": "application/json"},
@@ -142,72 +142,50 @@ def start_advice():
 
 # 참고 자료 표시
 def render_source_materials():
-
+    print(f"[START]main.render_source_materials()")
     with st.expander("사용된 참고 자료 보기"):
-        st.subheader("찬성 측 참고 자료")
-        for i, doc in enumerate(st.session_state.docs.get(AgentType.PRO, [])[:3]):
-            st.markdown(f"**문서 {i+1}**")
-            st.text(doc[:300] + "..." if len(doc) > 300 else doc)
-            st.divider()
-
-        st.subheader("반대 측 참고 자료")
-        for i, doc in enumerate(st.session_state.docs.get(AgentType.CON, [])[:3]):
-            st.markdown(f"**문서 {i+1}**")
-            st.text(doc[:300] + "..." if len(doc) > 300 else doc)
-            st.divider()
-
-        st.subheader("심판 측 참고 자료")
-        for i, doc in enumerate(st.session_state.docs.get(AgentType.JUDGE, [])[:3]):
+        st.subheader("참고 자료")
+        for i, doc in enumerate(st.session_state.docs.get(AgentType.IPO, [])[:3]):
             st.markdown(f"**문서 {i+1}**")
             st.text(doc[:300] + "..." if len(doc) > 300 else doc)
             st.divider()
 
 
 def display_advice_results():
-
+    print(f"[START]main.display_advice_results()")
     if st.session_state.viewing_history:
-        st.info("📚 이전에 저장된 토론을 보고 있습니다.")
+        st.info("📚 이전에 저장된 상담내역을 보고 있습니다.")
         topic = st.session_state.loaded_topic
     else:
         topic = st.session_state.ui_topic
 
-    # 토론 주제 표시
-    st.header(f"토론 주제: {topic}")
+    # 상담내역 표시
+    st.header(f"상담내역: {topic}")
 
     for message in st.session_state.messages:
 
         role = message["role"]
-        if role not in [
-            AgentType.PRO,
-            AgentType.CON,
-            AgentType.JUDGE,
-        ]:
-            continue
-
-        if message["role"] == AgentType.PRO:
-            avatar = "🙆🏻‍♀️"
-        elif message["role"] == AgentType.CON:
-            avatar = "🙅🏻‍♂"
-        elif message["role"] == AgentType.JUDGE:
+      
+        if message["role"] == AgentType.IPO:
             avatar = "👩🏻‍⚖️"
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    if role == AgentType.JUDGE:
-        st.session_state.debate_active = True
-        st.session_state.viewing_history = False
+    st.session_state.viewing_history = False
 
     # 참고 자료 표시
     if st.session_state.docs:
         render_source_materials()
 
-    if st.button("새 토론 시작"):
+    if st.button("새 상담 시작"):
         reset_session_state()
         st.session_state.app_mode = "input"
         st.rerun()
 
 
 def render_ui():
+    print(f"[START]main.render_ui()")
+
     # 페이지 설정
     st.set_page_config(page_title="IPO 상담", page_icon="🤖")
 
@@ -222,10 +200,12 @@ def render_ui():
         """
     )
 
+    #sidebar표시
     render_sidebar()
 
+    #
     current_mode = st.session_state.app_mode
-
+    print(f"[START]main.render_ui.current_mode=[{current_mode}]")
     if current_mode == "advice":
         start_advice()
     elif current_mode == "results":
@@ -240,3 +220,7 @@ if __name__ == "__main__":
     init_session_state()
 
     render_ui()
+
+
+# command
+# streamlit run main.py

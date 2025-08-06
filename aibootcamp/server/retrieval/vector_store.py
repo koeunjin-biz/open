@@ -8,7 +8,7 @@ from utils.config import get_embeddings
 def get_topic_vector_store(
     topic: str, role: str, language: str = "ko"
 ) -> Optional[FAISS]:
-
+    print(f"[START]vector_store.get_topic_vector_store({topic},{role},{language})")
     # 검색어 개선
     improved_queries = improve_search_query(topic, role)
     # 개선된 검색어로 검색 콘텐츠 가져오기
@@ -23,6 +23,8 @@ def get_topic_vector_store(
 
 
 def search_topic(topic: str, role: str, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    print(f"[START]vector_store.search_topic({topic},{role},{query},{k})")
+    
     # 문서를 검색해서 벡터 스토어 생성
     vector_store = get_topic_vector_store(topic, role)
     if not vector_store:

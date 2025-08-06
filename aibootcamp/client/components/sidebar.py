@@ -6,11 +6,13 @@ from components.history import render_history_ui
 
 
 def render_input_form():
+    print(f"[START]sidebar.render_input_form()")
+
     with st.form("advice_form", border=False):
         # 상담내역 입력
         st.text_input(
             label="상담내역을 입력하세요:",
-            value="주식시장에 상장신청하려고 하는데, 준비해야하는 서류가 무엇인가?",
+            value="채권상장하고 싶은데, 채권상장 절차를 알려주세요.",
             key="ui_topic",
         )
 
@@ -28,6 +30,8 @@ def render_input_form():
 
 
 def render_sidebar() -> Dict[str, Any]:
+    print(f"[START]sidebar.render_sidebar()")
+
     with st.sidebar:
 
         tab1, tab2 = st.tabs(["새 상담", "상담 이력"])

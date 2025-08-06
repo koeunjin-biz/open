@@ -31,11 +31,12 @@ class Settings(BaseSettings):
     API_BASE_URL: str
 
     # SQLite 데이터베이스 설정
-    DB_PATH: str = str
+    DB_PATH: str = "history.db"
     SQLALCHEMY_DATABASE_URI: str = f"sqlite:///./{DB_PATH}"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
+    SERVER_PORT: int = 8081
 
     def get_llm(self):
         """Azure OpenAI LLM 인스턴스를 반환합니다."""

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from langfuse.callback import CallbackHandler
 
 
-from workflow.state import AgentType, AdviceItemState
+from workflow.state import AgentType, AdviceState
 from workflow.graph import create_advice_graph
 
 
@@ -30,9 +30,10 @@ class WorkflowResponse(BaseModel):
     result: Any = None
 
 
-async def advice_generator(debate_graph, initial_state, langfuse_handler):
+async def advice_generator(advice_graph, initial_state, langfuse_handler):
+    print(f"[START]workflow.advice_generator({advice_graph},{initial_state},{langfuse_handler})")
     # 그래프에서 청크 스트리밍
-    for chunk in debate_graph.stream(
+    for chunk in advice_graph.stream(
         initial_state,
         config={"callbacks": [langfuse_handler]},
         subgraphs=True,
@@ -52,20 +53,16 @@ async def advice_generator(debate_graph, initial_state, langfuse_handler):
 
         if subgraph_node:
             response = subgraph_node.get("response", None)
-            debate_state = subgraph_node.get("debate_state", None)
-            messages = debate_state.get("messages", [])
-            round = debate_state.get("current_round")
-            max_rounds = debate_state.get("max_rounds")
-            docs = debate_state.get("docs", {})
-            topic = debate_state.get("topic")
+            advice_state = subgraph_node.get("advice_state", None)
+            messages = advice_state.get("messages", [])
+            docs = advice_state.get("docs", {})
+            topic = advice_state.get("topic")
 
             state = {
                 "role": role,
                 "response": response,
                 "topic": topic,
                 "messages": messages,
-                "current_round": round,
-                "max_rounds": max_rounds,
                 "docs": docs,
             }
 
@@ -79,21 +76,23 @@ async def advice_generator(debate_graph, initial_state, langfuse_handler):
     yield f"data: {json.dumps({'type': 'end', 'data': {}}, ensure_ascii=False)}\n\n"
 
 
-# 엔드포인트 경로 수정 (/debate/stream -> 유지)
-@router.post("/debate/stream")
-async def stream_debate_workflow(request: WorkflowRequest):
+# 엔드포인트 경로 수정 (/advice/stream -> 유지)
+@router.post("/advice/stream")
+async def stream_advice_workflow(request: WorkflowRequest):
+    print(f"[START]workflow.stream_advice_workflow({request})")
+
     topic = request.topic
-    max_rounds = request.max_rounds
     enable_rag = request.enable_rag
 
-    session_id = str(uuid.uuid4())
-    debate_graph = create_debate_graph(enable_rag, session_id)
+    print(f"topic=[{topic}]")
+    print(f"enable_rag=[{enable_rag}]")
 
-    initial_state: DebateState = {
+    session_id = str(uuid.uuid4())
+    advice_graph = create_advice_graph(enable_rag, session_id)
+
+    initial_state: AdviceState = {
         "topic": topic,
         "messages": [],
-        "current_round": 1,
-        "max_rounds": max_rounds,
         "prev_node": "START",  # 이전 노드 START로 설정
         "docs": {},  # RAG 결과 저장
     }
@@ -102,6 +101,6 @@ async def stream_debate_workflow(request: WorkflowRequest):
 
     # 스트리밍 응답 반환
     return StreamingResponse(
-        debate_generator(debate_graph, initial_state, langfuse_handler),
+        advice_generator(advice_graph, initial_state, langfuse_handler),
         media_type="text/event-stream",
     )

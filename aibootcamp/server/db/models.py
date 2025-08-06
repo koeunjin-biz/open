@@ -6,7 +6,7 @@ from db.database import Base
 
 # 상담내역 모델
 class AdviceItem(Base):
-    __tablename__ = "advice_item"
+    __tablename__ = "adviceitems"
 
     id = Column(Integer, primary_key=True, index=True)
     topic = Column(String(255), nullable=False)

@@ -2,9 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 
 # 절대 경로 임포트로 수정
-from routers import workflow
 from routers import history
-from utils.config import model_config
+from routers import workflow
+from utils.config import save_vectorstore
 
 # 데이터베이스 초기화를 위한 임포트 추가
 from db.database import Base, engine
@@ -23,8 +23,12 @@ app = FastAPI(
 app.include_router(history.router)
 app.include_router(workflow.router)
 
+# pdf파일읽기
+save_vectorstore("./data/[KRX+2024-07]+채권시장+상장공시+업무+가이드(2024년+개정판).pdf")
+
+
 # 실행은 server 경로에서
 # . venv/bin/activate
 # uvicorn main:app --port=8001
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=model_config.PORT)
+    uvicorn.run(app, host="0.0.0.0", port=8081)

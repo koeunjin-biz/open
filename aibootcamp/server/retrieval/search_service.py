@@ -8,15 +8,14 @@ from utils.config import get_llm
 
 def improve_search_query(
     topic: str,
-    role: Literal["PRO_AGENT", "CON_AGENT", "JUDGE_AGENT"] = "JUDGE_AGENT",
+    role: Literal["IPO_AGENT"] = "IPO_AGENT",
 ) -> List[str]:
+    print(f"[START]search_service.improve_search_query({topic},{role})")
 
     template = "'{topic}'에 대해 {perspective} 웹검색에 적합한 3개의 검색어를 제안해주세요. 각 검색어는 25자 이내로 작성하고 콤마로 구분하세요. 검색어만 제공하고 설명은 하지 마세요."
 
     perspective_map = {
-        "PRO_AGENT": "찬성하는 입장을 뒷받침할 수 있는 사실과 정보를 찾고자 합니다.",
-        "CON_AGENT": "반대하는 입장을 뒷받침할 수 있는 사실과 정보를 찾고자 합니다.",
-        "JUDGE_AGENT": "객관적인 사실과 정보를 찾고자 합니다.",
+        "IPO_AGENT": "금융시장에 금융자본을 상장하기위한 사실과 정보를 찾고자 합니다."
     }
 
     prompt = template.format(topic=topic, perspective=perspective_map[role])
@@ -42,6 +41,7 @@ def get_search_content(
     language: str = "ko",
     max_results: int = 5,
 ) -> List[Document]:
+    print(f"[START]search_service.get_search_content({improved_queries},{language},{max_results})")
 
     try:
         documents = []
@@ -84,9 +84,11 @@ def get_search_content(
 
             except Exception as e:
                 st.warning(f"검색 중 오류 발생: {str(e)}")
+                print(f"검색 중 오류 발생: {str(e)}")
 
         return documents
 
     except Exception as e:
         st.error(f"검색 서비스 오류 발생: {str(e)}")
+        print(f"검색 서비스 오류 발생: {str(e)}")
         return []

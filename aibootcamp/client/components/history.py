@@ -8,110 +8,115 @@ from utils.state_manager import reset_session_state
 
 # API로 상담내역 이력 조회
 def fetch_adviceitem_history():
+    print(f"[START]history.fetch_adviceitem_history()")
     """API를 통해 상담내역 이력 가져오기"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
     API_BASE_URL = os.getenv("API_BASE_URL")
 
     try:
-        response = requests.get(f"{API_BASE_URL}/debates/")
+        response = requests.get(f"{API_BASE_URL}/history/")
         if response.status_code == 200:
-            debates = response.json()
+            adviceitems = response.json()
             # API 응답 형식에 맞게 데이터 변환 (id, topic, date, rounds)
             return [
-                (debate["id"], debate["topic"], debate["created_at"], debate["rounds"])
-                for debate in debates
+                (adviceitem["id"], adviceitem["topic"], adviceitem["created_at"])
+                for adviceitem in adviceitems
             ]
         else:
             st.error(f"상담내역 이력 조회 실패: {response.status_code}")
             return []
     except Exception as e:
-        st.error(f"API 호출 오류: {str(e)}")
+        st.error(f"[fetch_adviceitem_history]API 호출 오류: {str(e)}")
         return []
 
 
-# API로 특정 토론 데이터 조회
+# API로 특정 상담내역 데이터 조회
 def fetch_adviceitem_by_id(adviceitem_id):
-    """API를 통해 특정 토론 데이터 가져오기"""
+    print(f"[START]history.fetch_adviceitem_by_id({adviceitem_id})")
+    """API를 통해 특정 상담내역 데이터 가져오기"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
     API_BASE_URL = os.getenv("API_BASE_URL")
 
     try:
-        response = requests.get(f"{API_BASE_URL}/debates/{adviceitem_id}")
+        response = requests.get(f"{API_BASE_URL}/history/{adviceitem_id}")
         if response.status_code == 200:
-            debate = response.json()
-            topic = debate["topic"]
+            adviceitem = response.json()
+            topic = adviceitem["topic"]
             # 실제 API 응답 구조에 맞게 변환 필요
             messages = (
-                json.loads(debate["messages"])
-                if isinstance(debate["messages"], str)
-                else debate["messages"]
+                json.loads(adviceitem["messages"])
+                if isinstance(adviceitem["messages"], str)
+                else adviceitem["messages"]
             )
             docs = (
-                json.loads(debate["docs"])
-                if isinstance(debate["docs"], str)
-                else debate.get("docs", {})
+                json.loads(adviceitem["docs"])
+                if isinstance(adviceitem["docs"], str)
+                else adviceitem.get("docs", {})
             )
             return topic, messages, docs
         else:
-            st.error(f"토론 데이터 조회 실패: {response.status_code}")
+            st.error(f"상담내역 데이터 조회 실패: {response.status_code}")
             return None, None, None
     except Exception as e:
-        st.error(f"API 호출 오류: {str(e)}")
+        st.error(f"[fetch_adviceitem_by_id]API 호출 오류: {str(e)}")
         return None, None, None
 
 
-# API로 토론 삭제
+# API로 상담내역 삭제
 def delete_adviceitem_by_id(adviceitem_id):
-    """API를 통해 특정 토론 삭제"""
+    print(f"[START]history.delete_adviceitem_by_id({adviceitem_id})")
+    """API를 통해 특정 상담내역 삭제"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
     API_BASE_URL = os.getenv("API_BASE_URL")
 
     try:
-        response = requests.delete(f"{API_BASE_URL}/debates/{adviceitem_id}")
+        response = requests.delete(f"{API_BASE_URL}/history/{adviceitem_id}")
         if response.status_code == 200:
-            st.success("토론이 삭제되었습니다.")
+            st.success("상담내역이 삭제되었습니다.")
             return True
         else:
-            st.error(f"토론 삭제 실패: {response.status_code}")
+            st.error(f"상담내역 삭제 실패: {response.status_code}")
             return False
     except Exception as e:
-        st.error(f"API 호출 오류: {str(e)}")
+        st.error(f"[delete_adviceitem_by_id]API 호출 오류: {str(e)}")
         return False
 
 
-# API로 모든 토론 삭제
+# API로 모든 상담내역 삭제
 def delete_all_adviceitems():
-    """API를 통해 모든 토론 삭제"""
+    print(f"[START]history.delete_all_adviceitems()")
+    """API를 통해 모든 상담내역 삭제"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
     API_BASE_URL = os.getenv("API_BASE_URL")
 
     try:
-        # 모든 토론 목록 조회
-        adviceitem = fetch_adviceitem_history()
-        if not adviceitem:
+        # 모든 상담내역 목록 조회
+        adviceitems = fetch_adviceitem_history()
+        if not adviceitems:
             return True
 
-        # 각 토론 항목 삭제
+        # 각 상담내역 항목 삭제
         success = True
-        for adviceitem_id, _, _, _ in adviceitem:
-            response = requests.delete(f"{API_BASE_URL}/debates/{adviceitem_id}")
+        for adviceitem_id, _, _, _ in adviceitems:
+            response = requests.delete(f"{API_BASE_URL}/history/{adviceitem_id}")
             if response.status_code != 200:
                 success = False
 
         if success:
-            st.success("모든 토론이 삭제되었습니다.")
+            st.success("모든 상담내역이 삭제되었습니다.")
         return success
     except Exception as e:
-        st.error(f"API 호출 오류: {str(e)}")
+        st.error(f"[delete_all_adviceitems]API 호출 오류: {str(e)}")
         return False
 
 
-# API로 토론 저장
-def save_debate(topic, rounds, messages, docs=None):
+# API로 상담내역 저장
+def save_adviceitem(topic, messages, docs=None):
+    print(f"[START]history.save_adviceitem({topic},{messages},{docs})")
     """API를 통해 토론 결과를 데이터베이스에 저장"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
@@ -121,7 +126,6 @@ def save_debate(topic, rounds, messages, docs=None):
         # API 요청 데이터 준비
         debate_data = {
             "topic": topic,
-            "rounds": rounds,
             "messages": (
                 json.dumps(messages) if not isinstance(messages, str) else messages
             ),
@@ -132,7 +136,7 @@ def save_debate(topic, rounds, messages, docs=None):
             ),
         }
 
-        response = requests.post(f"{API_BASE_URL}/debates/", json=debate_data)
+        response = requests.post(f"{API_BASE_URL}/history/", json=debate_data)
 
         if response.status_code == 200 or response.status_code == 201:
             st.success("토론이 성공적으로 저장되었습니다.")
@@ -147,7 +151,7 @@ def save_debate(topic, rounds, messages, docs=None):
 
 # 상담내역 이력 UI 렌더링
 def render_history_ui():
-
+    print(f"[START]history.render_history_ui()")
     col1, col2 = st.columns([1, 1])
 
     with col1:
@@ -156,7 +160,7 @@ def render_history_ui():
 
     with col2:
         if st.button("전체 이력 삭제", type="primary", use_container_width=True):
-            if delete_all_debates():
+            if delete_all_adviceitems():
                 st.rerun()
 
     # 상담내역 이력 로드
@@ -170,7 +174,8 @@ def render_history_ui():
 
 # 상담내역 이력 목록 렌더링
 def render_history_list(adviceitem_history):
-    for id, topic, date, rounds in adviceitem_history:
+    print(f"[START]history.render_history_list({adviceitem_history})")
+    for id, topic, date in adviceitem_history:
         with st.container(border=True):
 
             # 토론 주제
@@ -179,7 +184,7 @@ def render_history_list(adviceitem_history):
             col1, col2, col3 = st.columns([3, 1, 1])
             # 토론 정보
             with col1:
-                st.caption(f"날짜: {date} | 라운드: {rounds}")
+                st.caption(f"날짜: {date} ")
 
             # 보기 버튼
             with col2:
