@@ -1,0 +1,81 @@
+graph LR
+
+subgraph "Client (Streamlit)"
+UI["Web UI<br/>client/main.py"]
+Sidebar["Sidebar & History<br/>client/components/"]
+end
+
+subgraph "Server (FastAPI)"
+API["FastAPI App<br/>server/main.py"]
+routerW["Workflow Router<br/>server/routers/workflow.py"]
+routerH["History Router<br/>server/routers/history.py"]
+end
+
+subgraph "Workflow (LangGraph)"
+Graph["StateGraph<br/>server/workflow/graph.py"]
+Agent["IPOAgent<br/>server/workflow/agents/ipo_agent.py"]
+State["AdviceState<br/>server/workflow/state.py"]
+end
+
+subgraph "Retrieval"
+VSvc["search_service.py<br/>Local Vector + External"]
+VStore["vector_store.py<br/>Similarity Search"]
+end
+
+subgraph "Data & Index"
+PDFs["KRX PDFs<br/>server/data/*.pdf"]
+Index["FAISS Index<br/>server/vector_index/"]
+end
+
+subgraph "DB"
+SQLite["SQLite (history.db)<br/>server/history.db"]
+Models["SQLAlchemy Models<br/>server/db/models.py"]
+end
+
+subgraph "Utils"
+Config["config.py<br/>LLM/Embeddings/Vectorstore"]
+end
+
+subgraph "External Services"
+AOAI["Azure OpenAI<br/>GPT-4o, Embeddings"]
+Langfuse["Langfuse<br/>Tracing/Monitoring"]
+DuckWiki["DuckDuckGo / Wikipedia"]
+end
+
+%% Client -> Server
+UI -->|"POST /api/v1/workflow/advice/stream (SSE)"| routerW
+UI -->|"GET/POST/DELETE /api/v1/history"| routerH
+Sidebar --> UI
+
+%% Server wiring
+API --> routerW
+API --> routerH
+routerW --> Graph
+Graph --> Agent
+Agent --> State
+
+%% Retrieval flow
+Agent -->|"search_topic()"| VStore
+VStore -->|"load_vectorstore()"| Index
+VStore -->|"if insufficient"| VSvc
+VSvc --> DuckWiki
+
+%% LLM calls and config
+Agent -->|"get_llm().invoke()"| AOAI
+Config --> AOAI
+Config -->|"get_embeddings()"| AOAI
+Config -->|"load/save vectorstore"| Index
+
+%% Data build at startup
+PDFs -->|"save_multiple_pdfs_vectorstore()"| Index
+API -->|"startup builds/loads index"| Index
+
+%% History DB
+routerH <--> SQLite
+Models --> SQLite
+
+%% Streaming back to client
+routerW -->|"StreamingResponse (SSE)"| UI
+
+%% Observability
+Graph -->|"callbacks"| Langfuse
