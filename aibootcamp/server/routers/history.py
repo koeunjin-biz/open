@@ -44,8 +44,8 @@ def read_adviceitem(advice_id: int, db: Session = Depends(get_db)):
 
 # 상담내역 삭제
 @router.delete("/history/{advice_id}")
-def delete_debate(advice_id: int, db: Session = Depends(get_db)):
-    print(f"[START]history.delete_debate({advice_id},{db})")
+def delete_adviceitem(advice_id: int, db: Session = Depends(get_db)):
+    print(f"[START]history.delete_adviceitem({advice_id},{db})")
     db_advice = db.query(AdviceItem).filter(AdviceItem.id == advice_id).first()
     if db_advice is None:
         raise HTTPException(status_code=404, detail="AdviceItem not found")

@@ -16,7 +16,7 @@ class IPOAgent(Agent):
     def _create_prompt(self, state: Dict[str, Any]) -> str:
         print(f"[START]ipo_agent._create_prompt({self},{state})")
         return f"""
-            당신은 '{state['topic']}'에 대해 KRX시장에 상장하는 절차를 가이드해주세요.
+            당신은 '{state['topic']}'에 대해 KRX시장에 상장하는 방법을 가이드해주세요.
             2 ~ 3문단, 각 문단은 100자내로 작성해주세요.
-            절차는 도식화해서 제시하면 더 좋을 듯합니다.
+            응답내용에 절차가 있다면, 도식화해서 제시하면 더 좋을 듯합니다.
             """

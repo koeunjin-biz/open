@@ -1,3 +1,9 @@
+import sys
+import os
+
+# 현재 디렉토리를 Python 경로에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from workflow.agents.ipo_agent import IPOAgent
 from workflow.state import AdviceState, AgentType
 from langgraph.graph import StateGraph, END
@@ -22,14 +28,15 @@ def create_advice_graph(enable_rag: bool = True, session_id: str = ""):
 
 if __name__ == "__main__":
 
+    # 그래프생성
     graph = create_advice_graph(True)
 
+    # 그래프 이미지 생성    
     graph_image = graph.get_graph().draw_mermaid_png()
 
+    # 그래프 이미지 저장
     output_path = "advice_graph.png"
     with open(output_path, "wb") as f:
         f.write(graph_image)
 
-    import subprocess
-
-    subprocess.run(["open", output_path])
+    print(f"그래프 이미지가 생성되었습니다: {output_path}")

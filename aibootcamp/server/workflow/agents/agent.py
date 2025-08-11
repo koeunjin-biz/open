@@ -85,8 +85,11 @@ class Agent(ABC):
 
     # 검색 결과로 Context 생성
     def _format_context(self, docs: list) -> str:
-        print(f"[START]agent._format_context({self},{doc})")
+        print(f"[START]agent._format_context({self},{len(docs) if docs else 0} docs)")
         context = ""
+        if not docs:
+            return context
+            
         for i, doc in enumerate(docs):
             source = doc.metadata.get("source", "Unknown")
             section = doc.metadata.get("section", "")
@@ -140,7 +143,7 @@ class Agent(ABC):
         advice_state = state["advice_state"]
         response = state["response"]
 
-        # 토론 상태 복사 및 업데이트
+        # 상담 상태 복사 및 업데이트
         new_advice_state = advice_state.copy()
 
         # 에이전트 응답 추가
@@ -154,7 +157,7 @@ class Agent(ABC):
         # 상태 업데이트
         return {**state, "advice_state": new_advice_state}
 
-    # 토론 실행
+    # 상담 실행
     def run(self, state: AdviceState) -> AdviceState:
         print(f"[START]agent.run({self},{state})")
         # 초기 에이전트 상태 구성
@@ -168,5 +171,5 @@ class Agent(ABC):
             agent_state, config={"callbacks": [langfuse_handler]}
         )
 
-        # 최종 토론 상태 반환
+        # 최종 상담 상태 반환
         return result["advice_state"]

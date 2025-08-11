@@ -101,7 +101,7 @@ def delete_all_adviceitems():
 
         # 각 상담내역 항목 삭제
         success = True
-        for adviceitem_id, _, _, _ in adviceitems:
+        for adviceitem_id, _, _ in adviceitems:
             response = requests.delete(f"{API_BASE_URL}/history/{adviceitem_id}")
             if response.status_code != 200:
                 success = False
@@ -117,14 +117,14 @@ def delete_all_adviceitems():
 # API로 상담내역 저장
 def save_adviceitem(topic, messages, docs=None):
     print(f"[START]history.save_adviceitem({topic},{messages},{docs})")
-    """API를 통해 토론 결과를 데이터베이스에 저장"""
+    """API를 통해 상담내역 결과를 데이터베이스에 저장"""
 
     # 포트 충돌 방지를 위해 환경변수 사용
     API_BASE_URL = os.getenv("API_BASE_URL")
 
     try:
         # API 요청 데이터 준비
-        debate_data = {
+        advice_data = {
             "topic": topic,
             "messages": (
                 json.dumps(messages) if not isinstance(messages, str) else messages
@@ -136,13 +136,13 @@ def save_adviceitem(topic, messages, docs=None):
             ),
         }
 
-        response = requests.post(f"{API_BASE_URL}/history/", json=debate_data)
+        response = requests.post(f"{API_BASE_URL}/history/", json=advice_data)
 
         if response.status_code == 200 or response.status_code == 201:
-            st.success("토론이 성공적으로 저장되었습니다.")
-            return response.json().get("id")  # 저장된 토론 ID 반환
+            st.success("상담내역이 성공적으로 저장되었습니다.")
+            return response.json().get("id")  # 저장된 상담내역 ID 반환
         else:
-            st.error(f"토론 저장 실패: {response.status_code} - {response.text}")
+            st.error(f"상담내역 저장 실패: {response.status_code} - {response.text}")
             return None
     except Exception as e:
         st.error(f"API 호출 오류: {str(e)}")
@@ -178,11 +178,11 @@ def render_history_list(adviceitem_history):
     for id, topic, date in adviceitem_history:
         with st.container(border=True):
 
-            # 토론 주제
+            # 상담내역 주제
             st.write(f"***{topic}***")
 
             col1, col2, col3 = st.columns([3, 1, 1])
-            # 토론 정보
+            # 상담내역 정보
             with col1:
                 st.caption(f"날짜: {date} ")
 
